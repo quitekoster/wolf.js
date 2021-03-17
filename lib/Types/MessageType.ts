@@ -4,5 +4,6 @@ export enum MessageType {
     TextVoice =         'text/voice_link',
     TextHtml =          'text/html',
     AudioSpeex =        'audio/x-speex',
-    ImageJpegHtml =     'image/jpeghtml'
+    ImageJpegHtml =     'image/jpeghtml',
+    GroupAction =       'application/palringo-group-action'
 }
