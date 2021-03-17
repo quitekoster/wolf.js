@@ -37,7 +37,7 @@ export default class Events {
     private OnLoginSuccess = async (user) => {
         this.sdk.currentSubscriber = user;
 
-        console.log(await this.sdk.message.groupSubscribe());
-        console.log(await this.sdk.message.privateSubscribe());
+        await this.sdk.message.groupSubscribe();
+        await this.sdk.message.privateSubscribe();
     }
 }
