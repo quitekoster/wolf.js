@@ -1,9 +1,12 @@
 import Client from './Client';
+import SDK from './SDK';
 
 module.exports = {
-    Client
+    Client,
+    SDK
 }
 
 export { 
-    Client
+    Client,
+    SDK
 }

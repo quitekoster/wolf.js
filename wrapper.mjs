@@ -1,3 +1,3 @@
 import wolfjs from './dist/index';
 
-export const { Client } = wolfjs;
+export const { Client, SDK } = wolfjs;
