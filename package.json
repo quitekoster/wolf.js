@@ -31,13 +31,17 @@
   },
   "scripts": {
     "compile": "rimraf ./dist && tsc",
+    "devCompile": "rimraf ./dist && tsc -w",
     "prepack": "npm run compile"
   },
   "dependencies": {
     "@types/node": ">=10.0.0",
     "@types/socket.io-client": "^1.4.36",
+    "@types/winston": "^2.4.4",
+    "blueimp-md5": "^2.18.0",
     "socket.io-client": "^2.4.0",
-    "uuid": "^8.3.2"
+    "uuid": "^8.3.2",
+    "winston": "^3.3.3"
   },
   "devDependencies": {
     "rimraf": "^3.0.2",

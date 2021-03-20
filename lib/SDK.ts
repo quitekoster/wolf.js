@@ -1,66 +1,79 @@
-import type { iConfig } from "./Interfaces/iConfig";
-import { DeviceType } from "./Types/DeviceType";
+import events, { EventEmitter, errorMonitor } from "events";
 import { connect as io } from 'socket.io-client';
-import EventEmitter from 'events';
-import SecurityManager from "./Managers/Security/SecurityManager";
-import MessageManager from "./Managers/Message/MessageManager";
+import type EmitData from "./models/EmitData";
+import type SDKConfig from "./interfaces/SDKConfig";
+import type Subscriber from './models/Subscriber';
+import SecurityHandler from "./handlers/SecurityHandler";
+import type SecurityToken from "./models/SecurityToken";
 
 export default class SDK extends EventEmitter {
 
-    private _config: iConfig;
-    currentSubscriber: object = {};
     connection: SocketIOClient.Socket;
-    security: SecurityManager;
-    message: MessageManager;
+    security: SecurityHandler;
+    private config: SDKConfig;
 
-    constructor(config: iConfig) {
-        super();
+    // Welcome Packet Information
+    ip: string;
+    country: string;
+    token: string;
+    avatarEndpoint: string;
+    mmsUploadEndpoint: string;
+    loggedInUser?: Subscriber;
 
-        this._config = config;
-        const { uri, token, device, onlineState } = config;
-        
-        this.connection = io(uri, {
+    // Security Stuff
+    securityToken: SecurityToken;
+
+    constructor(config: SDKConfig) {
+        // Instantiate the Event Emitter
+        super({ captureRejections: true });
+
+        // Instantiate an errorMonitor
+        this.on(errorMonitor, (err) => {  });
+
+        // Instantiate the config
+        this.config = config;
+
+        // Instantiate the Connection object
+        this.connection = io(this.config.uri, {
             transports: ['websocket'],
             autoConnect: false,
             reconnection: true,
             query: {
-                token,
-                device,
-                onlineState
+                token: this.config.token,
+                device: this.config.device,
+                onlineState: this.config.onlineState
             }
         });
 
-        this.security = new SecurityManager(this);
-        this.message = new MessageManager(this);
+        // Instantiate Welcome Data
+        this.ip = '0.0.0.0';
+        this.country = '';
+        this.token = this.config.token;
+        this.avatarEndpoint = '';
+        this.mmsUploadEndpoint = '';
+        this.loggedInUser = undefined;
+
+        // Instantiate Secuirty Stuff
+        this.securityToken = { token: '', identity: '' };
+
+        // Init Handlers
+        this.security = new SecurityHandler(this);
     }
 
-    _init = async () => {
+    init = async () => {
         this.connection.open();
-        this.security._init();
-        this.message._init();
-
-        return Promise.resolve();
     }
 
-    _close = async () => {
-        if (this._config.deauthToken)
-            await this.security.logout();
-        
-        this.security._close();
-        this.message._close();
+    close = async () => {
         this.connection.close();
-
-        return Promise.resolve();
     }
 
-    send = (event: string, data: any = {}) => new Promise((resolve, reject) => {
-        if (!data || data === null || data === undefined || typeof data !== 'object')
-            data = {};
-        else if (!data.headers && !data.body)
+    send = (event: string, data: EmitData = {}) => new Promise((resolve, reject) => {
+        if (!data.headers && !data.body)
             data = { body: data ?? {} }
 
-        this.connection.emit(event, data, res => {
-            if (res.code && res.code >= 200 && res.code <= 299)
+        this.connection.emit(event, data, (res: { code: number, body?: object }) => {
+            if (res.code >= 200 && res.code <= 299)
                 resolve(res.body ?? res);
             else
                 reject(res);
