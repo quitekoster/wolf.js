@@ -5,5 +5,5 @@ export default Object.freeze({
         LogoutSuccess: 'Security.LogoutSuccess',
         LogoutFailed: 'Security.LogoutFailed',
         TokenRefreshed: 'Security.TokenRefreshed',
-    }
+    },
 });

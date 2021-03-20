@@ -12,6 +12,7 @@ export default class Client {
     constructor(config?: Partial<ClientConfig>) {
         // Instantiate Config
         this.config = {
+            cacheEntities: config?.cacheEntities ?? true,
             uri: config?.uri ?? 'wss://v3.palringo.com',
             token: config?.token ?? v4(),
             device: config?.device ?? 'web',

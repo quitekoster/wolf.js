@@ -3,13 +3,15 @@ import { connect as io } from 'socket.io-client';
 import type EmitData from "./models/EmitData";
 import type SDKConfig from "./interfaces/SDKConfig";
 import type Subscriber from './models/Subscriber';
-import SecurityHandler from "./handlers/SecurityHandler";
 import type SecurityToken from "./models/SecurityToken";
+import SecurityHandler from "./handlers/SecurityHandler";
+import SubscriberHandler from "./handlers/SubscriberHandler";
 
 export default class SDK extends EventEmitter {
 
     connection: SocketIOClient.Socket;
     security: SecurityHandler;
+    subscriber: SubscriberHandler;
     private config: SDKConfig;
 
     // Welcome Packet Information
@@ -22,6 +24,9 @@ export default class SDK extends EventEmitter {
 
     // Security Stuff
     securityToken: SecurityToken;
+
+    // Cache Stuff
+    cacheEntities: boolean;
 
     constructor(config: SDKConfig) {
         // Instantiate the Event Emitter
@@ -56,15 +61,29 @@ export default class SDK extends EventEmitter {
         // Instantiate Secuirty Stuff
         this.securityToken = { token: '', identity: '' };
 
+        // Instantiate Cache Stuff
+        this.cacheEntities = this.config.cacheEntities;
+
         // Init Handlers
         this.security = new SecurityHandler(this);
+        this.subscriber = new SubscriberHandler(this);
     }
 
     init = async () => {
         this.connection.open();
+
+        await Promise.all([
+            this.security.init,
+            this.subscriber.init,
+        ]);
     }
 
     close = async () => {
+        await Promise.all([
+            this.security.close,
+            this.subscriber.close
+        ]);
+
         this.connection.close();
     }
 

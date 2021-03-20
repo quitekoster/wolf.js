@@ -3,5 +3,8 @@ export default Object.freeze({
         Login: 'security login',
         Logout: 'security logout',
         TokenRefresh: 'security token refresh',
+    },
+    Subscriber: {
+        Profile: 'subscriber profile'
     }
 });

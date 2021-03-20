@@ -3,4 +3,5 @@ export default interface SDKConfig {
     token: string;
     device: 'web' | 'android' | 'ios';
     onlineState: 0 | 1;
+    cacheEntities: boolean
 };
