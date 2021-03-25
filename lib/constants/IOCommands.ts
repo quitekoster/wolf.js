@@ -1,4 +1,7 @@
 export default Object.freeze({
+    Group: {
+        Profile: 'group profile'
+    },
     Security: {
         Login: 'security login',
         Logout: 'security logout',
@@ -6,5 +9,10 @@ export default Object.freeze({
     },
     Subscriber: {
         Profile: 'subscriber profile'
+    },
+    Message: {
+        GroupSubscribe: 'message group subscribe',
+        PrivateSubscribe: 'message private subscribe',
+        Send: 'message send'
     }
 });

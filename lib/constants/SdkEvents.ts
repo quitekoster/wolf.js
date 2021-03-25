@@ -6,4 +6,12 @@ export default Object.freeze({
         LogoutFailed: 'Security.LogoutFailed',
         TokenRefreshed: 'Security.TokenRefreshed',
     },
+    Group: {
+        MemberJoined: 'Group.MemberJoined',
+        MemberLeft: 'Group.MemberLeft',
+        MemberUpdate: 'Group.AdminAction',
+    },
+    Message: {
+        Received: 'Message.Received'
+    }
 });

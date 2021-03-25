@@ -2,12 +2,15 @@ import type { ClientConfig } from "./interfaces/ClientConfig";
 import { v4 } from 'uuid';
 import SDK from "./SDK";
 import Events from "./Events";
+import CommandService from "./services/CommandService";
+import type CommandContext from "./interfaces/CommandContext";
 
 export default class Client {
 
-    private config: ClientConfig;
+    config: ClientConfig;
     sdk: SDK;
     on: Events;
+    commandService: CommandService;
 
     constructor(config?: Partial<ClientConfig>) {
         // Instantiate Config
@@ -23,11 +26,12 @@ export default class Client {
         // Instantiate SDK
         this.sdk = new SDK(this.config);
         this.on = new Events(this.sdk);
+        this.commandService = new CommandService(this.sdk);
 
         this.init();
     }
-
-    private init = async () => {
+    
+    init = async () => {
         process.on('SIGINT', async () => await this.close());
         process.on('SIGTERM', async () => await this.close());
         process.on('SIGBREAK', async () => await this.close());
@@ -35,13 +39,21 @@ export default class Client {
 
         await this.on.init();
         await this.sdk.init();
+        await this.commandService.init();
     }
 
-    private close = async () => {
+    close = async () => {
         if (this.config.invalidateTokenOnClose)
             await this.sdk.security.logout();
             
+        await this.commandService.close();
         await this.sdk.close();
-        process.exit(1);
+        process.exit(0);
     }
+
+    // Security Shortcuts
+    login = (username: string, password: string) => this.sdk.security.login(username, password);
+    logout = () => this.sdk.security.logout();
+
+    command = (trigger: string, ...fns: ((sdk: SDK, context: CommandContext, next: () => Promise<void>) => Promise<void>)[]) => this.commandService.command(trigger, ...fns);
 }

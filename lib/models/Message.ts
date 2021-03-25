@@ -7,4 +7,6 @@ export default interface Message {
     isGroup: boolean;
     timestamp: Date;
     mimeType: MessageType;
+    data: Buffer;
+    flightId?: string;
 }

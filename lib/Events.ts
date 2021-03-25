@@ -1,4 +1,6 @@
 import SdkEvents from "./constants/SdkEvents";
+import { MessageType } from "./enums/MessageType";
+import type Message from "./models/Message";
 import type SecurityToken from "./models/SecurityToken";
 import type Subscriber from "./models/Subscriber";
 import type Welcome from "./models/Welcome";
@@ -17,6 +19,7 @@ export default class Events {
         this.loginSuccess = this.onLoginSuccess;
         this.logoutSuccess = this.onLogoutSuccess;
         this.sdk.on(SdkEvents.Security.TokenRefreshed, this.onTokenRefresh);
+        this.sdk.connection.on('message send', this.onMessage);
     }
 
     set connected(fn: () => Promise<void>) { this.sdk.connection.on('connect', fn); }
@@ -31,6 +34,12 @@ export default class Events {
     set loginFailed(fn: () => Promise<void>) { this.sdk.on(SdkEvents.Security.LoginFailed, fn); }
     set logoutSuccess(fn: () => Promise<void>) { this.sdk.on(SdkEvents.Security.LogoutSuccess, fn); }
     set logoutFailed(fn: () => Promise<void>) { this.sdk.on(SdkEvents.Security.LogoutFailed, fn); }
+
+    set groupMemberJoin(fn: (subscriberId: number, groupId: number) => Promise<void>) { this.sdk.on(SdkEvents.Group.MemberJoined, fn); }
+    set groupMemberLeave(fn: (subscriberId: number, groupId: number) => Promise<void>) { this.sdk.on(SdkEvents.Group.MemberLeft, fn); }
+    set groupMemberUpdated(fn: (subscriberId: number, instigatorId: number, groupId: number, action: 'owner' | 'admin' | 'mod' | 'reset' | 'silence' | 'kick' | 'ban') => Promise<void>) { this.sdk.on(SdkEvents.Group.MemberUpdate, fn); }
+
+    set messageReceived(fn: (message: Message) => Promise<void>) { this.sdk.on(SdkEvents.Message.Received, fn); }
 
     private onDisconnected = async () => {
         // Invalidate the Token
@@ -76,9 +85,52 @@ export default class Events {
         // Grab Security Tokens for MMS Upload if needed
         if (this.sdk.securityToken.identity === '' || this.sdk.securityToken.token === '')
             await this.sdk.security.tokenRefresh();
+
+        // Subscribe to Messages
+        await this.sdk.message.groupSubscribe();
+        await this.sdk.message.privateSubscribe();
     }
 
     private onTokenRefresh = async (token: SecurityToken) => {
         this.sdk.securityToken = token;
+    }
+
+    private onMessage = async (data: { code: number, body: Message }) => {
+        switch (data.body.mimeType) {
+            case MessageType.GroupAction:
+                return await this.onGroupAction(data);
+            default:
+                return this.sdk.emit(SdkEvents.Message.Received, data.body);
+        }
+    }
+
+    private onGroupAction = async (data: { code: number, body: Message }) => {
+        const { originator, recipient, data: bodyData } = data.body;
+
+        const action = <{ 
+            instigatorId: number, 
+            action: 'owner' | 'admin' | 'mod' | 'reset' | 'silence' | 'ban' | 'join' | 'leave';
+        }>JSON.parse(bodyData.toString('utf-8'));
+
+        let recp = recipient['id'] ?? recipient;
+        let grp = originator['id'] ?? originator;
+        let inst = action.instigatorId;
+
+        switch (action.action) {
+            case 'owner':
+            case 'admin':
+            case 'mod':
+            case 'reset':
+            case 'silence':
+            case 'ban':
+                return this.sdk.emit(SdkEvents.Group.MemberUpdate, recp, inst, grp, action.action);
+            case 'join':
+                return this.sdk.emit(SdkEvents.Group.MemberJoined, recp, grp);
+            case 'leave': {
+                if (inst === undefined)
+                    return this.sdk.emit(SdkEvents.Group.MemberLeft, recp, grp);
+                return this.sdk.emit(SdkEvents.Group.MemberUpdate, recp, inst, grp, 'kick');
+            }
+        }
     }
 }

@@ -6,12 +6,16 @@ import type Subscriber from './models/Subscriber';
 import type SecurityToken from "./models/SecurityToken";
 import SecurityHandler from "./handlers/SecurityHandler";
 import SubscriberHandler from "./handlers/SubscriberHandler";
+import GroupHandler from "./handlers/GroupHandler";
+import MessageHandler from "./handlers/MessageHandler";
 
 export default class SDK extends EventEmitter {
 
     connection: SocketIOClient.Socket;
     security: SecurityHandler;
     subscriber: SubscriberHandler;
+    group: GroupHandler;
+    message: MessageHandler;
     private config: SDKConfig;
 
     // Welcome Packet Information
@@ -67,21 +71,27 @@ export default class SDK extends EventEmitter {
         // Init Handlers
         this.security = new SecurityHandler(this);
         this.subscriber = new SubscriberHandler(this);
+        this.group = new GroupHandler(this);
+        this.message = new MessageHandler(this);
     }
 
     init = async () => {
         this.connection.open();
 
         await Promise.all([
-            this.security.init,
-            this.subscriber.init,
+            this.security.init(),
+            this.subscriber.init(),
+            this.group.init(),
+            this.message.init()
         ]);
     }
 
     close = async () => {
         await Promise.all([
-            this.security.close,
-            this.subscriber.close
+            this.security.close(),
+            this.subscriber.close(),
+            this.group.close(),
+            this.message.init()
         ]);
 
         this.connection.close();
